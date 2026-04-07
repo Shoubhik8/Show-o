@@ -1,0 +1,8 @@
+__pycache__/
+*.pth
+*.pt
+*.bin
+*.safetensors
+wandb/
+show-o2/wan_model/
+show-o2/showo2-1.5b-stage-2-c/

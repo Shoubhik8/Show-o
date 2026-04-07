@@ -14,11 +14,15 @@
 # limitations under the License.
 import numpy as np
 import torch
-from torch.nn.attention.flex_attention import BlockMask
-from torch.nn.attention.flex_attention import flex_attention, create_block_mask
-
-if torch.cuda.is_available():
-    flex_attention = torch.compile(flex_attention)
+try:
+    from torch.nn.attention.flex_attention import BlockMask
+    from torch.nn.attention.flex_attention import flex_attention, create_block_mask
+    if torch.cuda.is_available():
+        flex_attention = torch.compile(flex_attention)
+except ImportError:
+    BlockMask = None
+    flex_attention = None
+    create_block_mask = None
 
 
 def causal(b, h, q_idx, kv_idx):

@@ -51,11 +51,15 @@ from transformers.utils import (
 )
 from transformers.models.qwen2.configuration_qwen2 import Qwen2Config
 
-from torch.nn.attention.flex_attention import flex_attention, create_block_mask
-from torch.nn.attention.flex_attention import BlockMask
-
-if torch.cuda.is_available():
-    flex_attention = torch.compile(flex_attention)
+try:
+    from torch.nn.attention.flex_attention import flex_attention, create_block_mask
+    from torch.nn.attention.flex_attention import BlockMask
+    if torch.cuda.is_available():
+        flex_attention = torch.compile(flex_attention)
+except ImportError:
+    flex_attention = None
+    create_block_mask = None
+    BlockMask = None
 
 
 if is_flash_attn_2_available():

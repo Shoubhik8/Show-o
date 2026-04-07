@@ -18,7 +18,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 from transformers import AutoConfig
-from torch.nn.attention.flex_attention import BlockMask
+try:
+    from torch.nn.attention.flex_attention import BlockMask
+except ImportError:
+    BlockMask = None
 from .misc import velocity_prediction, next_token_prediction, interpolate_pos_encoding
 from .modeling_siglip import SiglipModel
 from .modeling_utils import ConfigMixin, ModelMixin, register_to_config
@@ -240,11 +243,10 @@ class Showo2Qwen2_5(ModelMixin, ConfigMixin):
         outputs = self.showo(
             inputs_embeds=input_embeds,
             attention_mask=attention_mask,
-            # position_ids=position_ids,
-            output_hidden_states=output_hidden_states
+            output_hidden_states=False,
         )
 
-        logits, last_hidden_states = outputs['logits'], outputs['hidden_states'][-1]
+        logits = outputs['logits']
 
         if text_labels is not None:
             loss_ntp = next_token_prediction(logits, text_labels, self.config.llm_vocab_size)
@@ -370,14 +372,14 @@ class Showo2Qwen2_5(ModelMixin, ConfigMixin):
                             new_image_labels[i, offset:offset + length] = image_labels[
                                                                           i * modality_positions.size(1) + j, :length]
 
-            outputs = self.showo(
+            # Call the base Qwen2Model directly to get last_hidden_state without
+            # storing all intermediate layer hidden states (saves ~2-4GB VRAM)
+            base_outputs = self.showo.model(
                 inputs_embeds=input_embeds,
                 attention_mask=attention_mask,
-                # position_ids=position_ids,
-                output_hidden_states=output_hidden_states
             )
-
-            logits, last_hidden_states = outputs['logits'], outputs['hidden_states'][-1]
+            last_hidden_states = base_outputs[0]
+            logits = self.showo.lm_head(last_hidden_states)
 
             # diffusion head to predict vector fields
             if hasattr(self, 'diff_proj'):

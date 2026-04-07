@@ -4,14 +4,13 @@ wandb:
   resume: 'auto'
 
 experiment:
-    project: "showo2-1.5b-stage-2-release"
-    name: "showo2-1.5b-stage-2-a"
-    output_dir: "showo2-1.5b-stage-2-a"
+    project: "showo2-1.5b-fashionrec-finetune"
+    name: "basic-recom-fine-tune"
+    output_dir: "showo2-1.5b-stage-2-c"
     output_dataloader_state_dir: "64gpus_dataloader_states"
-    max_train_examples_t2i: 100000000 # 100M
-    max_train_examples_mmu: 100000000 # 100M
-    save_every: 10000000
-    eval_every: 2500
+    max_train_examples_mmu: 1000000 # 10K
+    save_every: 10000
+    eval_every: 5000
     generate_every: 10000000
     log_every: 50
     log_grad_norm_every: 500
@@ -24,8 +23,8 @@ model:
 
     showo:
         model_name: "Showo2"
-        load_from_showo: False
-        pretrained_model_path: ""
+        load_from_showo: True
+        pretrained_model_path: "showlab/show-o2-1.5B"
         llm_model_path: "Qwen/Qwen2.5-1.5B-Instruct"
         llm_vocab_size: null # will be updated when setting the tokenizer in other code files
         hidden_size: 1536
@@ -37,14 +36,12 @@ model:
         mixed_modal_latent_height: 27
         mixed_modal_latent_width: 27
         patch_size: 2
-        num_diffusion_layers: 10
+        num_diffusion_layers: 5
         clip_latent_dim: 1152
         add_qk_norm: True
         add_time_embeds: True
-        frozen_params: [ 'showo', 'image_embedder_und', 'und_trans', 'position_embedding', 'image_embedder_gen', 'diffusion', 'diff_proj', 'time_embed_proj']
-#        params_not_load: ['fusion_proj']
+        frozen_params: [ 'diffusion', 'diff_proj']
         params_not_load: null
-
     clip:
       pretrained_model_path: "google/siglip-so400m-patch14-384"
 
@@ -55,11 +52,11 @@ dataset:
     accumulation: 1
     mixed_loader_mode: "concat_max_size_cycle"
     params:
-        train_t2i_shards_path_or_url: "path/to/your.jsonl"
-        train_mmu_shards_path_or_url: "path/to/your/image/dir"
-        annotation_path: "path/to/blip_laion_cc_sbu_558k.json"
+        train_t2i_shards_path_or_url: "/workspace/FashionRec/data/showo2_format/fashionrec_t2i_train.jsonl"
+        train_mmu_shards_path_or_url: "/workspace/FashionRec/data/item_images"
+        annotation_path: "/workspace/FashionRec/data/showo2_format/fashionrec_mmu_train.json"
         is_clip_encoder: False
-        default_system_prompt: ""
+        default_system_prompt: "system\nYou are a helpful assistant.<|im_end|>"
         add_caption_prompt: True
         validation_prompts_file: "prompts/t2i_prompts.txt"
         shuffle_buffer_size: 1000
@@ -85,19 +82,19 @@ dataset:
         hq_latent_width: ${model.showo.hq_image_latent_width}
         mixed_modal_latent_height: ${model.showo.hq_image_latent_height}
         mixed_modal_latent_width: ${model.showo.hq_image_latent_width}
-        min_res: [512, 512]
+        min_res: [128, 128]
         random_und_or_gen: 0.0
 
 optimizer:
     name: adamw
     params: # default adamw params
-        learning_rate_ve: 0.00005
-        learning_rate_proj: 0.00005
-        learning_rate_showo: 0.00005
+        learning_rate_ve: 0.000002
+        learning_rate_proj: 0.00001
+        learning_rate_showo: 0.00001
         scale_lr: False # scale learning rate by total batch size
         beta1: 0.9
         beta2: 0.999
-        weight_decay: 0.0
+        weight_decay: 0
         epsilon: 1e-8
 
 lr_scheduler:
@@ -123,18 +120,18 @@ transport:
     time_shifting_factor: 3.0
 
 training:
-    gradient_accumulation_steps: 1
-    batch_size_t2i: 4
-    batch_size_mmu: 4
+    gradient_accumulation_steps: 2
+    batch_size_t2i: 1
+    batch_size_mmu: 1
     mixed_precision: "bf16"
     enable_tf32: True
-    seed: 10086
-    max_train_steps: null # will be calculated in the training code
+    seed: 1008
+    max_train_steps: null # will be updated in the training code
     cond_dropout_prob: 0.1
     label_smoothing: 0.0
     max_grad_norm: 1.0
     ntp_coeff: 1.0
-    flow_coeff: 1.0
-    stage: "pre-training"
+    flow_coeff: 0.0
+    stage: "tuning"
     noise_und_image: True
     und_max_t0: 1.0

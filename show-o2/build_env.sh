@@ -29,3 +29,4 @@ pip3 install moviepy;
 pip3 install tensorflow==2.16.1;
 pip3 install decord;
 pip3 install jsonlines;
+pip3 install torch==2.5.1;
