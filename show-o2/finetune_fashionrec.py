@@ -218,25 +218,11 @@ def main():
 
     # Data for generation
 
-    train_dataloader_t2i = create_imagetext_dataloader(
-        train_shards_path_or_url=dataset_config.train_t2i_shards_path_or_url,
-        batch_size=config.training.batch_size_t2i,
-        text_tokenizer=text_tokenizer,
-        image_size=preproc_config.resolution,
-        max_seq_len=preproc_config.max_seq_length,
-        num_image_tokens=preproc_config.num_t2i_image_tokens,
-        latent_width=preproc_config.latent_width,
-        latent_height=preproc_config.latent_height,
-        cond_dropout_prob=config.training.cond_dropout_prob,
-        num_workers=dataset_config.num_workers,
-        drop_last=True,
-        shuffle=True,
-        min_res=preproc_config.min_res,
-        random_und_or_gen=preproc_config.random_und_or_gen,
-        showo_token_ids=showo_token_ids,
-        system=("", "", ""),
-        accelerator=accelerator
-    )
+    # t2i dataloader removed: MMU-only finetune. The diffusion head is frozen
+    # (frozen_params) and flow_coeff=0.0, so t2i samples contribute no training
+    # signal. MMU samples already zero their image_masks in prepare_latents_and_labels,
+    # so the diffusion head's loss is inert for them too. Keeping only MMU doubles
+    # the useful samples per step for the same memory footprint.
 
     def create_dataloader(dataset, batch_size, collate_fn):
         if accelerator.num_processes > 1:
@@ -318,7 +304,7 @@ def main():
 
     # Combine these dataloaders into a single iterable model
     mixed_loader = MixedDataLoader(
-        loader_list=[train_dataloader_t2i, train_dataloader_mmu],
+        loader_list=[train_dataloader_mmu],
         samp_probs=config.dataset.samp_probs,
         accumulation=config.dataset.accumulation,
         mode=config.dataset.mixed_loader_mode

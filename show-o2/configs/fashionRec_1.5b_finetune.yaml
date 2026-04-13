@@ -19,7 +19,7 @@ experiment:
 model:
     vae_model:
         type: "wan21"
-        pretrained_model_path: "/workspace/Show-o/show-o2/wan_model/Wan2.1_VAE.pth"
+        pretrained_model_path: "/workspace/Show-o/show-o2/Wan_Model/Wan2.1_VAE.pth"
 
     showo:
         model_name: "Showo2"
@@ -40,7 +40,7 @@ model:
         clip_latent_dim: 1152
         add_qk_norm: True
         add_time_embeds: True
-        frozen_params: [ 'diffusion', 'diff_proj']
+        frozen_params: [ 'diffusion', 'diff_proj', 'und_trans', 'position_embedding']
         params_not_load: null
     clip:
       pretrained_model_path: "google/siglip-so400m-patch14-384"
@@ -120,9 +120,9 @@ transport:
     time_shifting_factor: 3.0
 
 training:
-    gradient_accumulation_steps: 2
-    batch_size_t2i: 1
-    batch_size_mmu: 1
+    gradient_accumulation_steps: 1
+    batch_size_t2i: 0
+    batch_size_mmu: 8
     mixed_precision: "bf16"
     enable_tf32: True
     seed: 1008
